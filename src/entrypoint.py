@@ -1,4 +1,4 @@
-from prefect import flow, task
+from prefect import flow, task, unmapped
 from prefect_dask.task_runners import DaskTaskRunner
 from .tasks.load import textLinesToList, excelToDataframe, getBalancedSample
 from .tasks.classify import optimizeModels
@@ -6,8 +6,7 @@ from .tasks.classify import optimizeModels
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
-from tidyML import DataMediator, NeptuneExperimentTracker
-import pandas as pd
+from tidyML import NeptuneExperimentTracker
 
 getControlIDs = task(textLinesToList)
 getCaseIDs = task(textLinesToList)
@@ -45,7 +44,9 @@ def start(configToInitialize: DictConfig):
         random.seed(config.sampling["randomSeed"])
 
         bootstrapDatasets = getBalancedSample.map(
-            [random.randint() for i in config.sampling["bootstrapIterations"]]
+            unmapped(inputs),
+            unmapped(config),
+            [random.randint() for i in config.sampling["bootstrapIterations"]],
         )
 
         optimizeModels(config.model.classList, bootstrapDatasets[0])
