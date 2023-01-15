@@ -1,7 +1,7 @@
 from prefect import flow, task, unmapped
 from prefect_dask.task_runners import DaskTaskRunner
 from .tasks.load import textLinesToList, excelToDataframe, getBalancedSample
-from .tasks.classify import optimizeModels
+from .tasks.classify import optimizeModel
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
@@ -11,9 +11,11 @@ from tidyML import NeptuneExperimentTracker
 getControlIDs = task(textLinesToList)
 getCaseIDs = task(textLinesToList)
 getRelatedSampleIDs = task(textLinesToList)
-
 getSampleMetadata = task(excelToDataframe())
 
+getBalancedSample = task(getBalancedSample)
+
+optimizeModel = task(optimizeModel)
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def start(configToInitialize: DictConfig):
@@ -46,10 +48,10 @@ def start(configToInitialize: DictConfig):
         bootstrapDatasets = getBalancedSample.map(
             unmapped(inputs),
             unmapped(config),
-            [random.randint() for i in config.sampling["bootstrapIterations"]],
+            [random.randint() for i in iterations],
         )
 
-        optimizeModels(config.model.classList, bootstrapDatasets[0])
+        optimizeModel.map(config.model.classList, unmapped(bootstrapDatasets[0]))
 
 
 if __name__ == "__main__":

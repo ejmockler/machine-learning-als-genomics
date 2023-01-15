@@ -1,2 +1,2 @@
-def optimizeModels(modelClassList, dataMediator):
+def optimizeModel(model, dataMediator):
     pass
