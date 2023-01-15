@@ -1,4 +1,7 @@
 prefect
+prefect-dask
+tidyML
 hydra-core
+pandas
 pyspark
 plotly
