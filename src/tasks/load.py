@@ -13,15 +13,15 @@ def excelToDataframe(excelFilePath):
     return pd.read_excel(excelFilePath)
 
 
-def getBalancedSample(inputs, config, randomSeed):
+def getBalancedSample(variantCallPath, testProportion, controlIDs, caseIDs, randomSeed):
     from tidyML import DataMediator
     import pandas as pd
 
     return DataMediator(
-        pd.DataFrame(config.filePaths["variantCalls"]),
-        config.sampling["testProportion"],
-        inputs["controlIDs"],
-        inputs["caseIDs"],
+        pd.DataFrame(variantCallPath, sep="/t"),
+        testProportion,
+        controlIDs,
+        caseIDs,
         randomSeed,
         balancingMethod="downsampling",
     )

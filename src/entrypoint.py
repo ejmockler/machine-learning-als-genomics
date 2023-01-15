@@ -1,7 +1,7 @@
 from prefect import flow, task, unmapped
 from prefect_dask.task_runners import DaskTaskRunner
 from .tasks.load import textLinesToList, excelToDataframe, getBalancedSample
-from .tasks.classify import optimizeModel
+from .tasks.classify import optimizeModel, evaluateModel, trackResult
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
@@ -16,6 +16,7 @@ getSampleMetadata = task(excelToDataframe())
 getBalancedSample = task(getBalancedSample)
 
 optimizeModel = task(optimizeModel)
+
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def start(configToInitialize: DictConfig):
@@ -38,20 +39,41 @@ def start(configToInitialize: DictConfig):
     def sampleData(iterations=config.sampling["bootstrapIterations"]):
         import random
 
+        random.seed(config.sampling["randomSeed"])
+
+        bootstrapDatasets = getBalancedSample.map(
+            unmapped(config.filePaths["variantCalls"]),
+            unmapped(config.sampling["testProportion"]),
+            inputs["controlIDs"],
+            inputs["caseIDs"],
+            [random.randint() for i in iterations],
+        )
+
+        models = optimizeModel.map(
+            config.model.classList, unmapped(bootstrapDatasets[0])
+        )
+
+        return bootstrapDatasets, models
+
+    bootstrapDatasets, optimizedModels = sampleData()
+
+    @flow(task_runner=DaskTaskRunner)
+    def classifySamples():
         experimentTracker = NeptuneExperimentTracker(
             config.tracker["projectID"],
             config.tracker["entityID"],
             config.tracker["analysisName"],
         )
-        random.seed(config.sampling["randomSeed"])
 
-        bootstrapDatasets = getBalancedSample.map(
-            unmapped(inputs),
-            unmapped(config),
-            [random.randint() for i in iterations],
-        )
+        @task
+        def run(dataset):
+            for model in optimizedModels:
+                results = evaluateModel(model, dataset)
+                trackResult.map(results.keys(), results.values(), experimentTracker)
 
-        optimizeModel.map(config.model.classList, unmapped(bootstrapDatasets[0]))
+        run.map(bootstrapDatasets)
+
+    classifySamples()
 
 
 if __name__ == "__main__":
