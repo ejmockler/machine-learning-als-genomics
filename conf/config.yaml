@@ -1,0 +1,13 @@
+input:
+  variantCalls: // VCF file with all sample IDs
+  controlIDs: // text file, one ID per line
+  caseIDs:
+  relatedSampleIDs:
+  sampleMetadata: // excel file with clinical features
+sampling:
+  bootstrapIterations: // integer count of bootstrap samples
+  randomSeed: // integer to replicate sampling
+  testProportion: // proportion of variant calls for evaluation
+tracker:
+  entity: // entity name registered to tracker
+  project: // project name registered to tracker

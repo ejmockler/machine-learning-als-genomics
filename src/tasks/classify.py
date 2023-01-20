@@ -4,6 +4,3 @@ def optimizeModel(model, dataMediator):
 
 def evaluateModel(model, dataset):
     pass
-
-def trackResult(keys, values, tracker):
-    pass

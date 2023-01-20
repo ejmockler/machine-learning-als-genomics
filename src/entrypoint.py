@@ -1,21 +1,24 @@
 from prefect import flow, task, unmapped
 from prefect_dask.task_runners import DaskTaskRunner
-from .tasks.load import textLinesToList, excelToDataframe, getBalancedSample
-from .tasks.classify import optimizeModel, evaluateModel, trackResult
+
+from .tasks.load import textLinesToList, excelToDataFrame, embedSamples
+from .tasks.classify import optimizeModel, evaluateModel
+from .tasks.track import trackResult
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
 
-from tidyML import NeptuneExperimentTracker
-
 getControlIDs = task(textLinesToList)
 getCaseIDs = task(textLinesToList)
 getRelatedSampleIDs = task(textLinesToList)
-getSampleMetadata = task(excelToDataframe())
+getSampleMetadata = task(excelToDataFrame)
 
-getBalancedSample = task(getBalancedSample)
+embedSamples = task(embedSamples)
 
 optimizeModel = task(optimizeModel)
+evaluateModel = task(evaluateModel)
+
+trackResult = task(trackResult)
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
@@ -24,25 +27,23 @@ def start(configToInitialize: DictConfig):
 
     @flow(task_runner=DaskTaskRunner)
     def linkInput():
-        relatedSampleIDs = getRelatedSampleIDs(config.filePaths["relatedSamples"])
+        relatedSampleIDs = getRelatedSampleIDs(config.input["relatedSampleIDs"])
         return {
-            "controlIDs": getControlIDs(
-                config.filePaths["controlIDs"], relatedSampleIDs
-            ),
-            "caseIDs": getCaseIDs(config.filePaths["caseIDs"], relatedSampleIDs),
-            "sampleMetadata": getSampleMetadata(config.filePaths["sampleMetadata"]),
+            "controlIDs": getControlIDs(config.input["controlIDs"], relatedSampleIDs),
+            "caseIDs": getCaseIDs(config.input["caseIDs"], relatedSampleIDs),
+            "sampleMetadata": getSampleMetadata(config.input["sampleMetadata"]),
         }
-
-    inputs = linkInput()
 
     @flow(task_runner=DaskTaskRunner)
     def sampleData(iterations=config.sampling["bootstrapIterations"]):
         import random
 
+        inputs = linkInput()
+
         random.seed(config.sampling["randomSeed"])
 
-        bootstrapDatasets = getBalancedSample.map(
-            unmapped(config.filePaths["variantCalls"]),
+        bootstrapDatasets = embedSamples.map(
+            unmapped(config.input["variantCalls"]),
             unmapped(config.sampling["testProportion"]),
             inputs["controlIDs"],
             inputs["caseIDs"],
@@ -55,23 +56,26 @@ def start(configToInitialize: DictConfig):
 
         return bootstrapDatasets, models
 
-    bootstrapDatasets, optimizedModels = sampleData()
-
     @flow(task_runner=DaskTaskRunner)
     def classifySamples():
+        from tidyML import DataMediator, NeptuneExperimentTracker
+
+        bootstrapDatasets, optimizedModels = sampleData()
+
         experimentTracker = NeptuneExperimentTracker(
-            config.tracker["projectID"],
-            config.tracker["entityID"],
-            config.tracker["analysisName"],
+            config.tracker["project"],
+            config.tracker["entity"],
+            config.tracker["analysis"],
         )
 
         @task
-        def run(dataset):
+        def runSample(dataset: DataMediator):
+            dataset.resample()
             for model in optimizedModels:
                 results = evaluateModel(model, dataset)
                 trackResult.map(results.keys(), results.values(), experimentTracker)
 
-        run.map(bootstrapDatasets)
+        runSample.map(bootstrapDatasets)
 
     classifySamples()
 

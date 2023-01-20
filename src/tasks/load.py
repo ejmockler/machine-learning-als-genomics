@@ -7,13 +7,13 @@ def textLinesToList(textFilePath, linesToExclude: list[str]):
     return lineList
 
 
-def excelToDataframe(excelFilePath):
+def excelToDataFrame(excelFilePath):
     import pandas as pd
 
     return pd.read_excel(excelFilePath)
 
 
-def getBalancedSample(variantCallPath, testProportion, controlIDs, caseIDs, randomSeed):
+def embedSamples(variantCallPath, testProportion, controlIDs, caseIDs, randomSeed):
     from tidyML import DataMediator
     import pandas as pd
 
@@ -25,3 +25,7 @@ def getBalancedSample(variantCallPath, testProportion, controlIDs, caseIDs, rand
         randomSeed,
         balancingMethod="downsampling",
     )
+
+
+def prepareClassificationDataset(samples):
+    pass
