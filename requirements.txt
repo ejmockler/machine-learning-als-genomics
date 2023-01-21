@@ -3,5 +3,6 @@ prefect-dask
 tidyML
 hydra-core
 pandas
-pyspark
+scikit-learn
+scikit-optimize
 plotly

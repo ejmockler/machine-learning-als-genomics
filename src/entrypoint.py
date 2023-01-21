@@ -1,4 +1,5 @@
 from prefect import flow, task, unmapped
+from prefect.task_runners import ConcurrentTaskRunner
 from prefect_dask.task_runners import DaskTaskRunner
 
 from .tasks.load import textLinesToList, excelToDataFrame, embedSamples
@@ -7,6 +8,8 @@ from .tasks.track import trackResult
 
 import hydra
 from omegaconf import DictConfig, OmegaConf
+
+from ..conf.models import stack
 
 getControlIDs = task(textLinesToList)
 getCaseIDs = task(textLinesToList)
@@ -25,13 +28,17 @@ trackResult = task(trackResult)
 def start(configToInitialize: DictConfig):
     config = OmegaConf.to_yaml(configToInitialize)
 
-    @flow(task_runner=DaskTaskRunner)
+    @flow(task_runner=ConcurrentTaskRunner)
     def linkInput():
         relatedSampleIDs = getRelatedSampleIDs(config.input["relatedSampleIDs"])
         return {
-            "controlIDs": getControlIDs(config.input["controlIDs"], relatedSampleIDs),
-            "caseIDs": getCaseIDs(config.input["caseIDs"], relatedSampleIDs),
-            "sampleMetadata": getSampleMetadata(config.input["sampleMetadata"]),
+            "controlIDs": getControlIDs(
+                config.input["controlIDs"], relatedSampleIDs
+            ).submit(),
+            "caseIDs": getCaseIDs(config.input["caseIDs"], relatedSampleIDs).submit(),
+            "sampleMetadata": getSampleMetadata(
+                config.input["sampleMetadata"]
+            ).submit(),
         }
 
     @flow(task_runner=DaskTaskRunner)
@@ -48,19 +55,26 @@ def start(configToInitialize: DictConfig):
             inputs["controlIDs"],
             inputs["caseIDs"],
             [random.randint() for i in iterations],
-        )
-
-        models = optimizeModel.map(
-            config.model.classList, unmapped(bootstrapDatasets[0])
-        )
-
-        return bootstrapDatasets, models
+        ).submit()
+        return (bootstrapDatasets,)
 
     @flow(task_runner=DaskTaskRunner)
     def classifySamples():
         from tidyML import DataMediator, NeptuneExperimentTracker
 
         bootstrapDatasets, optimizedModels = sampleData()
+
+        optimizedModels = optimizeModel.map(
+            stack,
+            cases=unmapped(
+                bootstrapDatasets.dataframe.iloc[
+                    bootstrapDatasets.originalExperimentalIDs
+                ]
+            ),
+            controls=unmapped(
+                bootstrapDatasets.dataframe.iloc[bootstrapDatasets.originalControlIDs]
+            ),
+        )
 
         experimentTracker = NeptuneExperimentTracker(
             config.tracker["project"],
@@ -73,9 +87,9 @@ def start(configToInitialize: DictConfig):
             dataset.resample()
             for model in optimizedModels:
                 results = evaluateModel(model, dataset)
-                trackResult.map(results.keys(), results.values(), experimentTracker)
+                trackResult(results.keys(), results.values(), experimentTracker)
 
-        runSample.map(bootstrapDatasets)
+        runSample.map(bootstrapDatasets).submit()
 
     classifySamples()
 

@@ -9,5 +9,6 @@ sampling:
   randomSeed: // integer to replicate sampling
   testProportion: // proportion of variant calls for evaluation
 tracker:
-  entity: // entity name registered to tracker
-  project: // project name registered to tracker
+  entity: // name registered to tracker
+  project:
+  analysis: // description of classifications
