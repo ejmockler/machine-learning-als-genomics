@@ -65,7 +65,8 @@ def start(configToInitialize: DictConfig):
         bootstrapDatasets, optimizedModels = sampleData()
 
         optimizedModels = optimizeModel.map(
-            stack,
+            model=stack.keys(),
+            space=stack.values(),
             cases=unmapped(
                 bootstrapDatasets.dataframe.iloc[
                     bootstrapDatasets.originalExperimentalIDs
