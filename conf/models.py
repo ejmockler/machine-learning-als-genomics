@@ -9,6 +9,7 @@ from sklearn.svm import LinearSVC, SVC
 
 from skopt.space import Categorical, Integer, Real
 
+# models keyed by hyperparameter spaces to optimize
 stack = {
     AdaBoostClassifier(): [
         Integer(25, 75, name="n_estimators"),

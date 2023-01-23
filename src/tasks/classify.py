@@ -27,7 +27,7 @@ def optimizeModel(
         )
 
     regressors = RegressorCollection(GaussianProcess={})
-    optimizer = BayesianOptimizer(regressors)
+    optimizer = BayesianOptimizer(regressors, iterations=50)
 
     numericLabels = [1] * len(cases) + [0] * len(controls)
     allData = concat([cases, controls])
