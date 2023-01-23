@@ -64,7 +64,7 @@ def start(configToInitialize: DictConfig):
 
         bootstrapDatasets, optimizedModels = sampleData()
 
-        optimizedModels = optimizeModel.map(
+        optimizedModels, convergencePlots = optimizeModel.map(
             model=stack.keys(),
             space=stack.values(),
             cases=unmapped(

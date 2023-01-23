@@ -1,6 +1,7 @@
 from typing import Iterable
 from skopt.space import Space
 from pandas import DataFrame
+from tidyML import DataMediator
 
 
 def optimizeModel(
@@ -43,5 +44,13 @@ def optimizeModel(
     return model, convergencePlot
 
 
-def evaluateModel(model, dataset):
-    pass
+def evaluateModel(model, dataset: DataMediator):
+    results = {}
+    for phase in ("train", "holdout-one", "holdout-two"):
+        clonedModel = model.clone()
+        if phase == "train":
+            clonedModel.fit(dataset.train, dataset.trainLabels)
+        elif "holdout" in phase:
+            testData = getattr(dataset, "holdout" if "one" in phase else "validation")
+            results[phase]["labelProbabilities"] = clonedModel.eval(testData)
+    return results
