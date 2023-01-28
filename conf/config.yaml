@@ -6,8 +6,8 @@ input:
   sampleMetadata: // excel file with clinical features
 sampling:
   bootstrapIterations: // integer count of bootstrap samples
-  randomSeed: // integer to replicate sampling
-  testProportion: // proportion of variant calls for evaluation
+  randomSeed: // integer seed to replicate sampling
+  testProportion: // proportion of samples for evaluation
 tracker:
   entity: // name registered to tracker
   project:
