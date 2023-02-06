@@ -1,4 +1,6 @@
-def textLinesToList(textFilePath, linesToExclude: list[str]):
+from pandas import DataFrame
+
+def textLinesToList(textFilePath: str, linesToExclude: list[str]):
     lineList = []
     with open(textFilePath) as file:
         for line in file:
@@ -7,18 +9,28 @@ def textLinesToList(textFilePath, linesToExclude: list[str]):
     return lineList
 
 
-def excelToDataFrame(excelFilePath):
+def excelToDataFrame(excelFilePath: str):
     import pandas as pd
 
     return pd.read_excel(excelFilePath)
 
+def vcfLikeToDataFrame(clinicalMetadata: DataFrame, vcfLikePath: str):
+    # read as VCF
+    # if raw VCF with headers | trimmed to genotype table only
+        # if headers
+            # slice genotype table
+        # genotypes = vcf[clinicalMetadata[sampleIDs]]
+        # chromosomePositionMetadata = vcf[getVCFmetadataNames]
+    # check whether genotype metadata exists & can be returned
+    #return chromosomePositionMetadata, genotypes
+    
 
-def embedSamples(variantCallPath, testProportion, controlIDs, caseIDs, randomSeed):
+
+def embedSamples(vcfDataFrame, testProportion, controlIDs, caseIDs, randomSeed):
     from tidyML import DataMediator
-    import pandas as pd
 
     return DataMediator(
-        pd.DataFrame(variantCallPath, sep="/t"),
+        vcfDataFrame,
         testProportion,
         controlIDs,
         caseIDs,
