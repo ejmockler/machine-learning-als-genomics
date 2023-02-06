@@ -21,7 +21,7 @@ def vcfLikeToDataFrame(clinicalMetadata: DataFrame, vcfLikePath: str):
             # slice genotype table
         # genotypes = vcf[clinicalMetadata[sampleIDs]]
         # chromosomePositionMetadata = vcf[getVCFmetadataNames]
-    # check whether genotype metadata exists & can be returned
+    # TODO check whether genotype metadata exists & can be returned
     #return chromosomePositionMetadata, genotypes
     
 
