@@ -1,5 +1,6 @@
 from pandas import DataFrame
 
+
 def textLinesToList(textFilePath: str, linesToExclude: list[str]):
     lineList = []
     with open(textFilePath) as file:
@@ -14,16 +15,17 @@ def excelToDataFrame(excelFilePath: str):
 
     return pd.read_excel(excelFilePath)
 
+
 def vcfLikeToDataFrame(clinicalMetadata: DataFrame, vcfLikePath: str):
     # read as VCF
     # if raw VCF with headers | trimmed to genotype table only
-        # if headers
-            # slice genotype table
-        # genotypes = vcf[clinicalMetadata[sampleIDs]]
-        # chromosomePositionMetadata = vcf[getVCFmetadataNames]
+    # if headers
+    # slice genotype table
+    # genotypes = vcf[clinicalMetadata[sampleIDs]]
+    # chromosomePositionMetadata = vcf[getVCFmetadataNames]
     # TODO check whether genotype metadata exists & can be returned
-    #return chromosomePositionMetadata, genotypes
-    
+    # return chromosomePositionMetadata, genotypes
+    pass
 
 
 def embedSamples(vcfDataFrame, testProportion, controlIDs, caseIDs, randomSeed):
