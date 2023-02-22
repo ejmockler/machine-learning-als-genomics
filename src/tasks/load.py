@@ -17,12 +17,15 @@ def excelToDataFrame(excelFilePath: str):
 
 
 def vcfLikeToDataFrame(clinicalMetadata: DataFrame, vcfLikePath: str):
-    # read as VCF
-    # if raw VCF with headers | trimmed to genotype table only
+    # read VCF as dataframe
     # if headers
-    # slice genotype table
+        # extract fields
+        # slice genotype table
+    # else
+        # verify VCF fields & format
     # genotypes = vcf[clinicalMetadata[sampleIDs]]
-    # chromosomePositionMetadata = vcf[getVCFmetadataNames]
+    # chromosomePositionMetadata = vcf[fieldIndices]
+    
     # TODO check whether genotype metadata exists & can be returned
     # return chromosomePositionMetadata, genotypes
     pass
